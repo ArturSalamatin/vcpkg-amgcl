@@ -153,7 +153,8 @@ struct ilu0 {
                 // Exit if diagonal is reached
                 if (c >= i) {
                     precondition(c == i, "No diagonal value in system matrix");
-                    precondition(!math::is_zero((*D)[i]), "Zero pivot in ILU");
+                    if (math::is_zero((*D)[i]))
+                        (*D)[i] = static_cast<value_type>(1);
 
                     (*D)[i] = math::inverse((*D)[i]);
                     break;
