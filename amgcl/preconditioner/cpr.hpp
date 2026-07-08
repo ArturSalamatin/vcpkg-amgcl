@@ -519,7 +519,10 @@ class cpr {
             // Perform LU-factorization of A in-place
             for(int k = 0; k < B; ++k) {
                 scalar_type d = A[k*B+k];
-                assert(!math::is_zero(d));
+                if (math::is_zero(d)) {
+                    d = static_cast<scalar_type>(1);
+                    A[k*B+k] = d;
+                }
                 for(int i = k+1; i < B; ++i) {
                     A[i*B+k] /= d;
                     for(int j = k+1; j < B; ++j)
