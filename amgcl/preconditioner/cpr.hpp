@@ -41,7 +41,10 @@ THE SOFTWARE.
 namespace amgcl {
 namespace preconditioner {
 
-template <class PPrecond, class SPrecond>
+struct quasi_impes_weights {};
+struct true_impes_weights {};
+
+template <class PPrecond, class SPrecond, class WeightsPolicy = quasi_impes_weights>
 class cpr {
     static_assert(
             math::static_rows<typename PPrecond::backend_type::value_type>::value == 1,
