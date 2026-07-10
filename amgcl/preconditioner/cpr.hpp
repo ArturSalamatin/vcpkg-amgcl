@@ -523,6 +523,7 @@ class cpr {
         {
             const int B = math::static_rows<value_type>::value == 1 ? prm.block_size : math::static_rows<value_type>::value;
 
+            // Perform LU-factorization of A in-place
             for(int k = 0; k < B; ++k) {
                 scalar_type d = A[k*B+k];
                 assert(!math::is_zero(d));
@@ -533,6 +534,8 @@ class cpr {
                 }
             }
 
+            // Invert unit vector in-place.
+            // Lower triangular solve:
             for(int i = 0; i < B; ++i) {
                 value_type_p b = static_cast<value_type_p>(i == 0);
                 for(int j = 0; j < i; ++j)
@@ -540,6 +543,7 @@ class cpr {
                 y[i] = b;
             }
 
+            // Upper triangular solve:
             for(int i = B; i --> 0; ) {
                 for(int j = i+1; j < B; ++j)
                     y[i] -= A[i*B+j] * y[j];
