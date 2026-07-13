@@ -41,7 +41,10 @@ THE SOFTWARE.
 namespace amgcl {
 namespace preconditioner {
 
-template <class PPrecond, class SPrecond>
+struct quasi_impes_weights {};
+struct true_impes_weights {};
+
+template <class PPrecond, class SPrecond, class WeightsPolicy = quasi_impes_weights>
 class cpr {
     static_assert(
             math::static_rows<typename PPrecond::backend_type::value_type>::value == 1,
@@ -512,7 +515,11 @@ class cpr {
 
         // Inverts dense matrix A;
         // Returns the first column of the inverted matrix.
-        void invert(scalar_type *A, value_type_p *y)
+        void invert(scalar_type *A, value_type_p *y) {
+            invert_impl(A, y, WeightsPolicy{});
+        }
+
+        void invert_impl(scalar_type *A, value_type_p *y, quasi_impes_weights)
         {
             const int B = math::static_rows<value_type>::value == 1 ? prm.block_size : math::static_rows<value_type>::value;
 
@@ -542,6 +549,28 @@ class cpr {
                     y[i] -= A[i*B+j] * y[j];
                 y[i] /= A[i*B+i];
             }
+        }
+
+        void invert_impl(scalar_type *A, value_type_p *y, true_impes_weights)
+        {
+            const int B = math::static_rows<value_type>::value == 1
+                ? prm.block_size
+                : math::static_rows<value_type>::value;
+
+            if constexpr (math::static_rows<value_type>::value != 1) {
+                static_assert(math::static_rows<value_type>::value == 2,
+                    "true_impes_weights requires block size 2 (two-phase system). "
+                    "For B > 2, use quasi_impes_weights or implement ABF (Cao 2002).");
+            }
+            assert(B == 2 && "true_impes_weights requires block_size == 2");
+
+            scalar_type w0 =  A[1*B+1];
+            scalar_type w1 = -A[1*B+0];
+            scalar_type m = std::max(std::abs(w0), std::abs(w1));
+            if (m > 0) { w0 /= m; w1 /= m; }
+            else       { w0 = 1;  w1 = 0;  }
+            y[0] = static_cast<value_type_p>(w0);
+            y[1] = static_cast<value_type_p>(w1);
         }
 
         friend std::ostream& operator<<(std::ostream &os, const cpr &p) {
